@@ -1,0 +1,41 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres:latest
+    privileged: True
+    restart: always
+    ports:
+      - 54326:5432
+    environment:
+      POSTGRES_USER: vlad
+      POSTGRES_PASSWORD: 555
+      POSTGRES_DB: test_base
+  backend:
+    build: ./backend
+    privileged: true
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    command: bash -c "
+      python manage.py migrate &&
+      gunicorn backend.wsgi -b 0.0.0.0:8080
+      "
+    environment:
+      DJANGO_SETTINGS_MODULE: 'backend.settings.prod'
+  nginx:
+    build: ./nginx
+    privileged: true
+    ports:
+      - 8000:80
+    depends_on:
+      - backend
+  frontend:
+    build: ./frontend
+    privileged: true
+    ports:
+      - 80:80
+    depends_on:
+      - backend
